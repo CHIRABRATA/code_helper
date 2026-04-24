@@ -1,9 +1,23 @@
-function app() {
+import { useState } from 'react';
+import LandingPage from './landing_page';
+import LoginPage from './login_page';
+import SignupPage from './signup_page';
+
+function App() {
+  const [currentPage, setCurrentPage] = useState('landing');
+
+  const handleNavigate = (page) => {
+    setCurrentPage(page);
+    window.scrollTo(0, 0);
+  };
+
   return (
-    <div className="h-screen bg-black">
-      <h1 className="text-3xl font-bold text-blue-500">Hello, World!</h1>
-    </div>
+    <>
+      {currentPage === 'landing' && <LandingPage onNavigate={handleNavigate} />}
+      {currentPage === 'login' && <LoginPage onNavigate={handleNavigate} />}
+      {currentPage === 'signup' && <SignupPage onNavigate={handleNavigate} />}
+    </>
   );
 }
 
-export default app;
+export default App;
