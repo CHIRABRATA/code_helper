@@ -27,8 +27,8 @@ const LoginPage = ({ onNavigate }) => {
       } else {
         alert("Login successful!");
         console.log("User logged in:", data.user);
-        // Redirect to dashboard or home page
-        onNavigate("landing");
+        // Redirect to dashboard
+        onNavigate("dashboard");
       }
     } catch (err) {
       alert("An unexpected error occurred: " + err.message);

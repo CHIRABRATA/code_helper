@@ -50,8 +50,8 @@ const SignupPage = ({ onNavigate }) => {
       } else {
         alert("Signup successful! Check your email to confirm your account.");
         console.log("User data:", data);
-        // Redirect to login after successful signup
-        onNavigate("login");
+        // Redirect to dashboard after successful signup
+        onNavigate("dashboard");
       }
     } catch (err) {
       alert("An unexpected error occurred: " + err.message);
