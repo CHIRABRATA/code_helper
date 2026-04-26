@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Code } from 'lucide-react';
+import {supabase} from './supabaseClient';
 
 const SignupPage = ({ onNavigate }) => {
   const [showPassword, setShowPassword] = useState(false);
@@ -20,17 +21,41 @@ const SignupPage = ({ onNavigate }) => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validation checks
     if (formData.password !== formData.confirmPassword) {
-      alert('Passwords do not match!');
+      alert("Passwords do not match!");
       return;
     }
     if (!formData.agreeToTerms) {
-      alert('Please agree to Terms & Privacy');
+      alert("Please agree to Terms & Privacy");
       return;
     }
-    console.log("Signing up with:", formData);
+
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            full_name: formData.fullName,
+          },
+        },
+      });
+
+      if (error) {
+        alert("Signup error: " + error.message);
+      } else {
+        alert("Signup successful! Check your email to confirm your account.");
+        console.log("User data:", data);
+        // Redirect to login after successful signup
+        onNavigate("login");
+      }
+    } catch (err) {
+      alert("An unexpected error occurred: " + err.message);
+    }
   };
 
   return (
