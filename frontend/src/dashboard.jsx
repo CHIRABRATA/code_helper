@@ -95,60 +95,69 @@ const Dashboard = ({ onNavigate }) => {
   return (
     <div className={`min-h-screen ${isDarkMode ? 'bg-slate-950' : 'bg-slate-50'}`}>
       {/* HEADER */}
-      <header className={`${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} border-b sticky top-0 z-40 px-6 py-4`}>
-        <div className="max-w-[1400px] mx-auto flex items-center justify-between">
-          {/* Logo */}
-          <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 ${isDarkMode ? 'bg-indigo-600' : 'bg-indigo-500'} rounded-lg flex items-center justify-center text-white font-bold`}>
-              &lt;/&gt;
+      <header className={`${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} border-b sticky top-0 z-40 px-3 sm:px-6 py-3 sm:py-4`}>
+        <div className="flex items-center justify-between gap-2 sm:gap-4">
+          {/* Logo & Menu Toggle */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className={`lg:hidden p-2 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-100'}`}
+            >
+              {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+            <div className="hidden sm:flex items-center gap-2">
+              <div className={`w-8 h-8 sm:w-10 sm:h-10 ${isDarkMode ? 'bg-indigo-600' : 'bg-indigo-500'} rounded-lg flex items-center justify-center text-white font-bold text-xs sm:text-sm`}>
+                &lt;/&gt;
+              </div>
+              <span className={`text-lg sm:text-xl font-bold tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>CODE PEER</span>
             </div>
-            <span className={`text-xl font-bold tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>CODE PEER</span>
           </div>
 
-          {/* Search Bar */}
-          <div className="flex-1 max-w-md mx-8">
-            <div className={`relative flex items-center ${isDarkMode ? 'bg-slate-800' : 'bg-slate-100'} rounded-lg px-4 py-2`}>
-              <Search className={`w-5 h-5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`} />
+          {/* Search Bar - Hidden on mobile, visible on sm+ */}
+          <div className="hidden sm:block flex-1 max-w-xs lg:max-w-md">
+            <div className={`relative flex items-center ${isDarkMode ? 'bg-slate-800' : 'bg-slate-100'} rounded-lg px-3 py-2`}>
+              <Search className={`w-4 h-4 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`} />
               <input
                 type="text"
-                placeholder="Search code, users, or tags..."
-                className={`flex-1 ml-3 bg-transparent outline-none placeholder-shown:text-sm ${isDarkMode ? 'text-white placeholder-slate-500' : 'text-slate-900 placeholder-slate-400'}`}
+                placeholder="Search..."
+                className={`flex-1 ml-2 bg-transparent outline-none text-xs sm:text-sm placeholder-shown:text-xs ${isDarkMode ? 'text-white placeholder-slate-500' : 'text-slate-900 placeholder-slate-400'}`}
               />
             </div>
           </div>
 
           {/* Right Section */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <button onClick={() => setIsDarkMode(!isDarkMode)} className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-100'}`}>
-              {isDarkMode ? <Sun className="w-5 h-5 text-yellow-400" /> : <Moon className="w-5 h-5 text-slate-600" />}
+              {isDarkMode ? <Sun className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400" /> : <Moon className="w-4 h-4 sm:w-5 sm:h-5 text-slate-600" />}
             </button>
             <button className={`p-2 rounded-lg transition-colors relative ${isDarkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-100'}`}>
-              <Bell className={`w-5 h-5 ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`} />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+              <Bell className={`w-4 h-4 sm:w-5 sm:h-5 ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`} />
+              <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-red-500 rounded-full"></span>
             </button>
-            <div className="flex items-center gap-3 pl-4 border-l border-slate-700">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-blue-500 flex items-center justify-center text-sm font-bold text-white">
+            <div className="hidden sm:flex items-center gap-2 pl-3 sm:pl-4 border-l border-slate-700">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-indigo-400 to-blue-500 flex items-center justify-center text-xs font-bold text-white">
                 JD
               </div>
-              <span className={`font-medium ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{currentUser.name}</span>
+              <span className={`text-xs sm:text-sm font-medium ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{currentUser.name}</span>
               <button
                 onClick={handleLogout}
-                className={`p-2 rounded-lg transition-colors ml-2 ${isDarkMode ? 'hover:bg-slate-800 text-slate-400 hover:text-red-500' : 'hover:bg-slate-100 text-slate-600 hover:text-red-600'}`}
-                title="Logout"
+                className={`p-1.5 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-slate-800 text-slate-400 hover:text-red-500' : 'hover:bg-slate-100 text-slate-600 hover:text-red-600'}`}
               >
-                <LogOut className="w-5 h-5" />
+                <LogOut className="w-4 h-4" />
               </button>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="flex">
-        {/* SIDEBAR */}
-        <aside className={`w-56 ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} border-r h-screen overflow-y-auto sticky top-16`}>
-          <div className="p-6 space-y-8">
+      <div className="flex h-[calc(100vh-60px)] sm:h-[calc(100vh-70px)]">
+        {/* SIDEBAR - Mobile overlay on sm-, fixed on lg+ */}
+        <aside className={`${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        } lg:translate-x-0 fixed lg:relative lg:w-52 xl:w-56 ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} border-r h-full overflow-y-auto sticky top-16 lg:top-0 transition-transform duration-300 w-48 sm:w-56 z-30`}>
+          <div className="p-3 sm:p-6 space-y-4 sm:space-y-8">
             {/* Navigation */}
-            <nav className="space-y-2">
+            <nav className="space-y-1 sm:space-y-2">
               {[
                 { icon: Home, label: 'Home', active: true },
                 { icon: Compass, label: 'Explore', active: false },
@@ -156,133 +165,142 @@ const Dashboard = ({ onNavigate }) => {
                 { icon: FileText, label: 'My Posts', active: false },
                 { icon: Brain, label: 'AI Reviews', active: false },
                 { icon: Code, label: 'Saved Snippets', active: false },
-                { icon: Bell, label: 'Notifications', active: false },
-                { icon: Mail, label: 'Messages', active: false },
-                { icon: Settings, label: 'Settings', active: false },
               ].map((item) => (
                 <button
                   key={item.label}
-                  className={`w-full flex items-center gap-4 px-4 py-3 rounded-lg transition-colors ${
+                  className={`w-full flex items-center gap-2 sm:gap-4 px-2 sm:px-4 py-2 sm:py-3 rounded-lg transition-colors text-xs sm:text-sm font-medium ${
                     item.active
                       ? isDarkMode ? 'bg-indigo-600/20 text-indigo-400' : 'bg-indigo-100 text-indigo-600'
                       : isDarkMode ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-100'
                   }`}
                 >
-                  <item.icon className="w-5 h-5" />
-                  <span className="font-medium">{item.label}</span>
+                  <item.icon className="w-4 h-4 flex-shrink-0" />
+                  <span className="hidden sm:inline">{item.label}</span>
                 </button>
               ))}
             </nav>
 
             {/* New Post Button */}
-            <button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors">
-              <Plus className="w-5 h-5" />
-              New Post
+            <button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 sm:py-3 rounded-lg font-semibold flex items-center justify-center gap-1 sm:gap-2 transition-colors text-xs sm:text-sm">
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">New Post</span>
+              <span className="sm:hidden">Post</span>
             </button>
 
-            {/* Upgrade Section */}
-            <div className={`${isDarkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-indigo-50 border-indigo-200'} border rounded-xl p-4`}>
-              <div className="flex items-center gap-2 mb-3">
-                <Star className="w-5 h-5 text-yellow-500" />
-                <h3 className={`font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Upgrade to Pro</h3>
+            {/* Upgrade Section - Hidden on mobile */}
+            <div className={`hidden sm:block ${isDarkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-indigo-50 border-indigo-200'} border rounded-xl p-3 sm:p-4`}>
+              <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                <Star className="w-4 h-4 text-yellow-500 flex-shrink-0" />
+                <h3 className={`font-bold text-xs sm:text-sm ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Upgrade to Pro</h3>
               </div>
-              <p className={`text-sm mb-4 ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>Unlock advanced AI reviews and more features.</p>
-              <button className={`w-full py-2 rounded-lg text-sm font-semibold transition-colors ${isDarkMode ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}>
+              <p className={`text-xs mb-2 sm:mb-4 ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>Unlock advanced AI reviews and more features.</p>
+              <button className={`w-full py-1.5 sm:py-2 rounded-lg text-xs font-semibold transition-colors ${isDarkMode ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}>
                 Upgrade Now →
               </button>
             </div>
+
+            {/* Mobile Logout */}
+            <button
+              onClick={handleLogout}
+              className="sm:hidden w-full flex items-center gap-2 px-2 py-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors text-xs font-medium"
+            >
+              <LogOut className="w-4 h-4" />
+              Logout
+            </button>
           </div>
         </aside>
 
         {/* MAIN CONTENT */}
-        <main className="flex-1 max-w-3xl">
-          <div className="p-6 space-y-6">
+        <main className="flex-1 overflow-y-auto">
+          <div className="p-2 sm:p-4 lg:p-6 space-y-3 sm:space-y-4 lg:space-y-6 max-w-2xl lg:max-w-3xl mx-auto">
             {/* Post Creator */}
-            <div className={`${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} border rounded-2xl p-6`}>
-              <div className="flex gap-4 mb-4">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-400 to-blue-500 flex items-center justify-center text-lg font-bold">
+            <div className={`${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} border rounded-lg sm:rounded-2xl p-3 sm:p-6`}>
+              <div className="flex gap-2 sm:gap-4 mb-2 sm:mb-4">
+                <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-indigo-400 to-blue-500 flex items-center justify-center text-sm sm:text-lg font-bold flex-shrink-0">
                   {currentUser.avatar}
                 </div>
                 <input
                   type="text"
-                  placeholder="What code do you want to share today?"
-                  className={`flex-1 bg-transparent outline-none placeholder-shown:text-sm ${isDarkMode ? 'text-white placeholder-slate-500' : 'text-slate-900 placeholder-slate-400'}`}
+                  placeholder="Share your code..."
+                  className={`flex-1 bg-transparent outline-none placeholder-shown:text-xs sm:placeholder-shown:text-sm ${isDarkMode ? 'text-white placeholder-slate-500' : 'text-slate-900 placeholder-slate-400'}`}
                 />
               </div>
-              <div className="flex gap-2 justify-end">
-                <button className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${isDarkMode ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}`}>
-                  <Code className="w-4 h-4" />
-                  Code
+              <div className="flex gap-1 sm:gap-2 justify-end flex-wrap">
+                <button className={`flex items-center gap-1 px-2 sm:px-4 py-1.5 sm:py-2 rounded text-xs sm:text-sm transition-colors ${isDarkMode ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}`}>
+                  <Code className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">Code</span>
                 </button>
-                <button className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${isDarkMode ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}`}>
-                  Add Title
+                <button className={`flex items-center gap-1 px-2 sm:px-4 py-1.5 sm:py-2 rounded text-xs sm:text-sm transition-colors ${isDarkMode ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}`}>
+                  <span className="text-xs">Title</span>
                 </button>
-                <button className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${isDarkMode ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}`}>
-                  Add Tag
+                <button className={`flex items-center gap-1 px-2 sm:px-4 py-1.5 sm:py-2 rounded text-xs sm:text-sm transition-colors ${isDarkMode ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}`}>
+                  <span className="text-xs">#Tag</span>
                 </button>
-                <button className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors">
+                <button className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 sm:px-6 py-1.5 sm:py-2 rounded font-semibold transition-colors text-xs sm:text-sm">
                   Post
                 </button>
               </div>
             </div>
 
             {/* Posts Feed */}
-            <div className="space-y-6">
+            <div className="space-y-3 sm:space-y-4 lg:space-y-6">
               {posts.map((post) => (
-                <div key={post.id} className={`${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} border rounded-2xl p-6`}>
+                <div key={post.id} className={`${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} border rounded-lg sm:rounded-2xl p-3 sm:p-6`}>
                   {/* Post Header */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex gap-3">
-                      <div className="w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center text-lg">
+                  <div className="flex items-start justify-between mb-3 sm:mb-4 gap-2">
+                    <div className="flex gap-2 sm:gap-3 flex-1">
+                      <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-full bg-slate-700 flex items-center justify-center text-sm sm:text-lg flex-shrink-0">
                         {post.avatar}
                       </div>
-                      <div>
-                        <h3 className={`font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{post.author}</h3>
-                        <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-                          {post.handle} · {post.timeAgo} · <span className={`px-2 py-1 rounded text-xs ${isDarkMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-700'}`}>{post.language}</span>
+                      <div className="min-w-0">
+                        <h3 className={`font-semibold text-xs sm:text-sm truncate ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{post.author}</h3>
+                        <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                          {post.handle} · {post.timeAgo}
                         </p>
+                        <span className={`inline-block px-2 py-0.5 rounded text-xs mt-1 ${isDarkMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-700'}`}>{post.language}</span>
                       </div>
                     </div>
                     <button className={isDarkMode ? 'text-slate-400 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'}>
-                      <MoreVertical className="w-5 h-5" />
+                      <MoreVertical className="w-4 h-4" />
                     </button>
                   </div>
 
                   {/* Post Title & Description */}
-                  <div className="mb-4">
-                    <h2 className={`text-lg font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{post.title}</h2>
-                    <p className={isDarkMode ? 'text-slate-400' : 'text-slate-600'}>{post.description}</p>
+                  <div className="mb-3 sm:mb-4">
+                    <h2 className={`text-sm sm:text-lg font-bold mb-1 sm:mb-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{post.title}</h2>
+                    <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>{post.description}</p>
                   </div>
 
                   {/* Code Block */}
-                  <div className={`${isDarkMode ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'} border rounded-xl p-4 mb-4 overflow-x-auto`}>
-                    <div className="flex justify-between items-center mb-3">
-                      <span className={`text-xs font-bold ${isDarkMode ? 'text-slate-400' : 'text-slate-600'} uppercase tracking-wider`}>{post.codeLanguage}</span>
-                    </div>
-                    <pre className={`text-sm font-mono ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                  <div className={`${isDarkMode ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'} border rounded p-2 sm:p-4 mb-3 sm:mb-4 overflow-x-auto`}>
+                    <span className={`text-xs font-bold ${isDarkMode ? 'text-slate-400' : 'text-slate-600'} uppercase tracking-wider`}>{post.codeLanguage}</span>
+                    <pre className={`text-xs sm:text-sm font-mono mt-2 ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
                       {post.code}
                     </pre>
                   </div>
 
                   {/* Post Stats */}
-                  <div className={`flex items-center justify-between pt-4 border-t ${isDarkMode ? 'border-slate-800' : 'border-slate-200'}`}>
-                    <div className="flex gap-6">
-                      <button className={`flex items-center gap-2 transition-colors ${isDarkMode ? 'text-slate-400 hover:text-red-500' : 'text-slate-600 hover:text-red-500'}`}>
-                        <Heart className="w-5 h-5" />
-                        <span className="text-sm font-medium">{post.likes}</span>
+                  <div className={`flex items-center justify-between pt-2 sm:pt-4 border-t gap-1 sm:gap-6 text-xs sm:text-sm ${isDarkMode ? 'border-slate-800' : 'border-slate-200'}`}>
+                    <div className="flex gap-2 sm:gap-6">
+                      <button className={`flex items-center gap-1 transition-colors ${isDarkMode ? 'text-slate-400 hover:text-red-500' : 'text-slate-600 hover:text-red-500'}`}>
+                        <Heart className="w-4 h-4" />
+                        <span className="hidden sm:inline font-medium">{post.likes}</span>
+                        <span className="sm:hidden text-xs">{post.likes}</span>
                       </button>
-                      <button className={`flex items-center gap-2 transition-colors ${isDarkMode ? 'text-slate-400 hover:text-blue-500' : 'text-slate-600 hover:text-blue-500'}`}>
-                        <MessageCircle className="w-5 h-5" />
-                        <span className="text-sm font-medium">{post.comments}</span>
+                      <button className={`flex items-center gap-1 transition-colors ${isDarkMode ? 'text-slate-400 hover:text-blue-500' : 'text-slate-600 hover:text-blue-500'}`}>
+                        <MessageCircle className="w-4 h-4" />
+                        <span className="hidden sm:inline font-medium">{post.comments}</span>
+                        <span className="sm:hidden text-xs">{post.comments}</span>
                       </button>
-                      <button className={`flex items-center gap-2 transition-colors ${isDarkMode ? 'text-slate-400 hover:text-indigo-500' : 'text-slate-600 hover:text-indigo-500'}`}>
-                        <Bookmark className="w-5 h-5" />
-                        <span className="text-sm font-medium">{post.bookmarks}</span>
+                      <button className={`flex items-center gap-1 transition-colors ${isDarkMode ? 'text-slate-400 hover:text-indigo-500' : 'text-slate-600 hover:text-indigo-500'}`}>
+                        <Bookmark className="w-4 h-4" />
+                        <span className="hidden sm:inline font-medium">{post.bookmarks}</span>
+                        <span className="sm:hidden text-xs">{post.bookmarks}</span>
                       </button>
                     </div>
-                    <button className={`flex items-center gap-2 transition-colors ${isDarkMode ? 'text-slate-400 hover:text-slate-300' : 'text-slate-600 hover:text-slate-900'}`}>
-                      <Share className="w-5 h-5" />
-                      <span className="text-sm font-medium">Share</span>
+                    <button className={`flex items-center gap-1 transition-colors ${isDarkMode ? 'text-slate-400 hover:text-slate-300' : 'text-slate-600 hover:text-slate-900'}`}>
+                      <Share className="w-4 h-4" />
+                      <span className="hidden sm:inline">Share</span>
                     </button>
                   </div>
                 </div>
@@ -291,60 +309,57 @@ const Dashboard = ({ onNavigate }) => {
           </div>
         </main>
 
-        {/* RIGHT SIDEBAR */}
-        <aside className={`w-80 ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} border-l h-screen overflow-y-auto sticky top-16 p-6 space-y-6`}>
+        {/* RIGHT SIDEBAR - Hidden on lg-, visible on xl+ */}
+        <aside className={`hidden xl:block w-64 ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} border-l h-full overflow-y-auto sticky top-0 p-4 space-y-4`}>
           {/* Profile Card */}
-          <div className={`${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'} border rounded-2xl p-6 text-center`}>
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-400 to-blue-500 flex items-center justify-center text-2xl font-bold mx-auto mb-4">
+          <div className={`${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'} border rounded-xl p-4 text-center`}>
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-400 to-blue-500 flex items-center justify-center text-xl font-bold mx-auto mb-3">
               {currentUser.avatar}
             </div>
-            <h2 className={`text-2xl font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{currentUser.name}</h2>
-            <p className={`text-sm mb-3 ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>{currentUser.handle}</p>
+            <h2 className={`text-lg font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{currentUser.name}</h2>
+            <p className={`text-xs mb-2 ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>{currentUser.handle}</p>
             {currentUser.isPro && (
-              <div className="inline-block px-3 py-1 bg-indigo-500/20 text-indigo-400 text-xs font-semibold rounded-full mb-4">
-                💎 Pro Member
+              <div className="inline-block px-2 py-0.5 bg-indigo-500/20 text-indigo-400 text-xs font-semibold rounded-full mb-3">
+                💎 Pro
               </div>
             )}
             
-            <div className="grid grid-cols-3 gap-4 mb-4 py-4 border-y border-slate-700">
+            <div className="grid grid-cols-3 gap-2 mb-3 py-3 border-y border-slate-700 text-xs">
               <div>
-                <p className="text-2xl font-bold text-indigo-500">{currentUser.posts}</p>
-                <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>Posts</p>
+                <p className="text-lg font-bold text-indigo-500">{currentUser.posts}</p>
+                <p className={`${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>Posts</p>
               </div>
               <div>
-                <p className="text-2xl font-bold text-indigo-500">{currentUser.followers}</p>
-                <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>Followers</p>
+                <p className="text-lg font-bold text-indigo-500">{currentUser.followers}</p>
+                <p className={`${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>Followers</p>
               </div>
               <div>
-                <p className="text-2xl font-bold text-indigo-500">{currentUser.following}</p>
-                <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>Following</p>
+                <p className="text-lg font-bold text-indigo-500">{currentUser.following}</p>
+                <p className={`${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>Following</p>
               </div>
             </div>
 
-            <button className={`w-full py-2 rounded-lg font-semibold transition-colors ${isDarkMode ? 'bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/30' : 'bg-indigo-100 text-indigo-600 hover:bg-indigo-200'}`}>
+            <button className={`w-full py-1.5 rounded-lg font-semibold text-xs transition-colors ${isDarkMode ? 'bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/30' : 'bg-indigo-100 text-indigo-600 hover:bg-indigo-200'}`}>
               View Profile
             </button>
           </div>
 
           {/* Top Contributors */}
           <div>
-            <h3 className={`text-lg font-bold mb-4 flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+            <h3 className={`text-sm font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
               🔥 Top Contributors
             </h3>
-            <div className="space-y-3">
-              {topContributors.map((contributor, index) => (
-                <div key={index} className="flex items-center gap-3">
-                  <span className={`text-sm font-bold ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>{index + 1}</span>
-                  <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center">
+            <div className="space-y-2">
+              {topContributors.slice(0, 3).map((contributor, index) => (
+                <div key={index} className="flex items-center gap-2 text-xs">
+                  <span className={`font-bold w-4 ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>{index + 1}</span>
+                  <div className="w-7 h-7 rounded-full bg-slate-700 flex items-center justify-center text-xs flex-shrink-0">
                     {contributor.avatar}
                   </div>
-                  <div className="flex-1">
-                    <p className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{contributor.name}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-xs font-medium truncate ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{contributor.name}</p>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <span className="text-indigo-500 font-bold">{contributor.points}</span>
-                    <span className="text-indigo-500">⚡</span>
-                  </div>
+                  <span className="text-indigo-500 font-bold">{contributor.points}</span>
                 </div>
               ))}
             </div>
@@ -352,12 +367,12 @@ const Dashboard = ({ onNavigate }) => {
 
           {/* Trending Tags */}
           <div>
-            <h3 className={`text-lg font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Trending Tags</h3>
-            <div className="flex flex-wrap gap-2">
-              {trendingTags.map((item, index) => (
+            <h3 className={`text-sm font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Trending</h3>
+            <div className="flex flex-wrap gap-1">
+              {trendingTags.slice(0, 5).map((item, index) => (
                 <button
                   key={index}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
                     isDarkMode
                       ? 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                       : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
@@ -367,14 +382,12 @@ const Dashboard = ({ onNavigate }) => {
                 </button>
               ))}
             </div>
-            <button className={`text-sm font-semibold flex items-center gap-1 mt-4 ${isDarkMode ? 'text-indigo-400 hover:text-indigo-300' : 'text-indigo-600 hover:text-indigo-700'}`}>
-              See all tags →
-            </button>
           </div>
         </aside>
       </div>
     </div>
   );
 };
+
 
 export default Dashboard;
