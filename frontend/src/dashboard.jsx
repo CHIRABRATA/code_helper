@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Search, Home, Compass, Bookmark, FileText, Brain, Code, Bell, Mail, Settings, Plus, Star, Heart, MessageCircle, Share, MoreVertical, Sun, Moon, LogOut } from 'lucide-react';
+import { Search, Home, Compass, Bookmark, FileText, Brain, Code, Bell, Mail, Settings, Plus, Star, Heart, MessageCircle, Share, MoreVertical, Sun, Moon, LogOut, Menu, X } from 'lucide-react';
 import { supabase } from './supabaseClient';
 
 const Dashboard = ({ onNavigate }) => {
   const [isDarkMode, setIsDarkMode] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [posts, setPosts] = useState([
     {
       id: 1,
