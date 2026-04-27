@@ -7,81 +7,12 @@ const PremiumDashboard = ({ onNavigate }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('home');
   const [hoveredPost, setHoveredPost] = useState(null);
+  const [loading, setLoading] = useState(true);
   
-  const [posts, setPosts] = useState([
-    {
-      id: 1,
-      author: 'Sarah Johnson',
-      avatar: '👩‍💻',
-      handle: '@sarahjohnson',
-      timeAgo: '2h ago',
-      language: 'JavaScript',
-      title: 'Debouncing function in JavaScript – Help needed!',
-      description: 'I implemented a debounce function but it\'s not working as expected. Can someone review my code?',
-      code: `function debounce(fn, delay) {
-  let timer;
-  return function(...args) {
-    clearTimeout(timer);
-    timer = setTimeout(() => fn.apply(this, args), delay);
-  }
-}`,
-      codeLanguage: 'JS',
-      likes: 24,
-      comments: 12,
-      bookmarks: 8,
-      liked: false,
-      bookmarked: false,
-    },
-    {
-      id: 2,
-      author: 'Alex Chen',
-      avatar: '👨‍💻',
-      handle: '@alexchen',
-      timeAgo: '5h ago',
-      language: 'Python',
-      title: 'Optimize this Python code',
-      description: 'This code works but is too slow for large datasets. Any suggestions?',
-      code: `def find_max(numbers):
-  max_num = numbers[0]
-  for n in numbers:
-    if n > max_num:
-      max_num = n
-  return max_num`,
-      codeLanguage: 'PY',
-      likes: 18,
-      comments: 7,
-      bookmarks: 5,
-      liked: false,
-      bookmarked: false,
-    },
-  ]);
-
-  const [currentUser] = useState({
-    name: 'John Doe',
-    handle: '@johndoe',
-    avatar: '👨‍💼',
-    isPro: true,
-    posts: 12,
-    followers: 289,
-    following: 156,
-  });
-
-  const topContributors = [
-    { name: 'Sarah Johnson', avatar: '👩‍💻', points: 482 },
-    { name: 'Alex Chen', avatar: '👨‍💻', points: 389 },
-    { name: 'Dev Patel', avatar: '👨‍🔬', points: 312 },
-    { name: 'Michael Brown', avatar: '👨‍🏫', points: 278 },
-    { name: 'Emily Davis', avatar: '👩‍🚀', points: 245 },
-  ];
-
-  const trendingTags = [
-    { tag: 'JavaScript', count: 1200 },
-    { tag: 'React', count: 890 },
-    { tag: 'Python', count: 756 },
-    { tag: 'CSS', count: 634 },
-    { tag: 'NextJS', count: 512 },
-    { tag: 'TypeScript', count: 476 },
-  ];
+  const [posts, setPosts] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [topContributors, setTopContributors] = useState([]);
+  const [trendingTags, setTrendingTags] = useState([]);
 
   const navItems = [
     { icon: Home, label: 'Home', id: 'home' },
@@ -92,20 +23,82 @@ const PremiumDashboard = ({ onNavigate }) => {
     { icon: Code, label: 'Snippets', id: 'snippets' },
   ];
 
-  const togglePostLike = (postId) => {
-    setPosts(posts.map(post =>
-      post.id === postId
-        ? { ...post, liked: !post.liked, likes: post.liked ? post.likes - 1 : post.likes + 1 }
-        : post
-    ));
+  const togglePostLike = async (postId) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        alert('Please login to like posts');
+        return;
+      }
+
+      const currentLike = posts.find(p => p.id === postId)?.liked;
+
+      if (currentLike) {
+        // Remove like
+        await supabase
+          .from('post_likes')
+          .delete()
+          .eq('post_id', postId)
+          .eq('user_id', user.id);
+      } else {
+        // Add like
+        await supabase
+          .from('post_likes')
+          .insert({
+            post_id: postId,
+            user_id: user.id,
+          });
+      }
+
+      // Update local state
+      setPosts(posts.map(post =>
+        post.id === postId
+          ? { ...post, liked: !post.liked, likes: post.liked ? post.likes - 1 : post.likes + 1 }
+          : post
+      ));
+    } catch (error) {
+      console.error('Error toggling like:', error.message);
+      alert('Error toggling like: ' + error.message);
+    }
   };
 
-  const togglePostBookmark = (postId) => {
-    setPosts(posts.map(post =>
-      post.id === postId
-        ? { ...post, bookmarked: !post.bookmarked, bookmarks: post.bookmarked ? post.bookmarks - 1 : post.bookmarks + 1 }
-        : post
-    ));
+  const togglePostBookmark = async (postId) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        alert('Please login to bookmark posts');
+        return;
+      }
+
+      const currentBookmark = posts.find(p => p.id === postId)?.bookmarked;
+
+      if (currentBookmark) {
+        // Remove bookmark
+        await supabase
+          .from('post_bookmarks')
+          .delete()
+          .eq('post_id', postId)
+          .eq('user_id', user.id);
+      } else {
+        // Add bookmark
+        await supabase
+          .from('post_bookmarks')
+          .insert({
+            post_id: postId,
+            user_id: user.id,
+          });
+      }
+
+      // Update local state
+      setPosts(posts.map(post =>
+        post.id === postId
+          ? { ...post, bookmarked: !post.bookmarked, bookmarks: post.bookmarked ? post.bookmarks - 1 : post.bookmarks + 1 }
+          : post
+      ));
+    } catch (error) {
+      console.error('Error toggling bookmark:', error.message);
+      alert('Error toggling bookmark: ' + error.message);
+    }
   };
 
   const handleLogout = async () => {
@@ -121,6 +114,187 @@ const PremiumDashboard = ({ onNavigate }) => {
     }
   };
 
+  // Fetch current user data
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (authUser) {
+          const { data: userData, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', authUser.id)
+            .single();
+
+          if (error) throw error;
+
+          setCurrentUser({
+            id: userData.id,
+            name: userData.name,
+            handle: userData.handle,
+            avatar: userData.avatar,
+            isPro: userData.is_pro,
+            posts: userData.posts_count,
+            followers: userData.followers_count,
+            following: userData.following_count,
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching user:', error.message);
+      }
+    };
+
+    fetchCurrentUser();
+  }, []);
+
+  // Fetch posts with user info and like/bookmark status
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        setLoading(true);
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+
+        // Fetch posts with user details
+        const { data: postsData, error: postsError } = await supabase
+          .from('posts')
+          .select(`
+            id,
+            title,
+            description,
+            code,
+            language,
+            code_language,
+            likes_count,
+            comments_count,
+            bookmarks_count,
+            created_at,
+            user_id,
+            users(id, name, handle, avatar)
+          `)
+          .order('created_at', { ascending: false })
+          .limit(10);
+
+        if (postsError) throw postsError;
+
+        // For each post, check if current user liked or bookmarked it
+        let enrichedPosts = [];
+        if (postsData) {
+          for (const post of postsData) {
+            let liked = false;
+            let bookmarked = false;
+
+            if (authUser) {
+              // Check if user liked this post
+              const { data: likeData } = await supabase
+                .from('post_likes')
+                .select('id')
+                .eq('post_id', post.id)
+                .eq('user_id', authUser.id)
+                .single();
+              liked = !!likeData;
+
+              // Check if user bookmarked this post
+              const { data: bookmarkData } = await supabase
+                .from('post_bookmarks')
+                .select('id')
+                .eq('post_id', post.id)
+                .eq('user_id', authUser.id)
+                .single();
+              bookmarked = !!bookmarkData;
+            }
+
+            // Calculate time ago
+            const createdDate = new Date(post.created_at);
+            const now = new Date();
+            const diffMinutes = Math.floor((now - createdDate) / 60000);
+            const diffHours = Math.floor((now - createdDate) / 3600000);
+            const diffDays = Math.floor((now - createdDate) / 86400000);
+
+            let timeAgo = '';
+            if (diffMinutes < 60) timeAgo = `${diffMinutes}m ago`;
+            else if (diffHours < 24) timeAgo = `${diffHours}h ago`;
+            else timeAgo = `${diffDays}d ago`;
+
+            enrichedPosts.push({
+              id: post.id,
+              author: post.users.name,
+              avatar: post.users.avatar,
+              handle: '@' + post.users.handle,
+              timeAgo,
+              language: post.language,
+              title: post.title,
+              description: post.description,
+              code: post.code,
+              codeLanguage: post.code_language,
+              likes: post.likes_count,
+              comments: post.comments_count,
+              bookmarks: post.bookmarks_count,
+              liked,
+              bookmarked,
+            });
+          }
+        }
+
+        setPosts(enrichedPosts);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching posts:', error.message);
+        setLoading(false);
+      }
+    };
+
+    fetchPosts();
+  }, []);
+
+  // Fetch trending tags
+  useEffect(() => {
+    const fetchTrendingTags = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('tags')
+          .select('*')
+          .order('count', { ascending: false })
+          .limit(6);
+
+        if (error) throw error;
+
+        setTrendingTags(data || []);
+      } catch (error) {
+        console.error('Error fetching trending tags:', error.message);
+      }
+    };
+
+    fetchTrendingTags();
+  }, []);
+
+  // Fetch top contributors (users with most likes on their posts)
+  useEffect(() => {
+    const fetchTopContributors = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('id, name, avatar, posts_count')
+          .order('posts_count', { ascending: false })
+          .limit(5);
+
+        if (error) throw error;
+
+        const contributorsWithPoints = (data || []).map(user => ({
+          name: user.name,
+          avatar: user.avatar,
+          points: user.posts_count * 50 + Math.floor(Math.random() * 200), // Simple points calculation
+        }));
+
+        setTopContributors(contributorsWithPoints);
+      } catch (error) {
+        console.error('Error fetching top contributors:', error.message);
+      }
+    };
+
+    fetchTopContributors();
+  }, []);
+
+  // Handle window resize
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth > 1024) {
@@ -211,10 +385,10 @@ const PremiumDashboard = ({ onNavigate }) => {
             {/* User Menu */}
             <div className="hidden sm:flex items-center gap-3 pl-3 sm:pl-4 border-l border-slate-700/30">
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-xs font-bold text-white shadow-lg">
-                JD
+                {currentUser?.avatar?.charAt(0) || 'U'}
               </div>
               <span className={`text-xs sm:text-sm font-medium ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                {currentUser.name}
+                {currentUser?.name || 'User'}
               </span>
               <button
                 onClick={handleLogout}
@@ -334,7 +508,7 @@ const PremiumDashboard = ({ onNavigate }) => {
             } border rounded-lg sm:rounded-2xl p-3 sm:p-6 backdrop-blur transition-all duration-300 hover:border-indigo-500/30 hover:shadow-lg`}>
               <div className="flex gap-2 sm:gap-4 mb-3 sm:mb-4">
                 <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-sm sm:text-lg font-bold flex-shrink-0 shadow-lg">
-                  {currentUser.avatar}
+                  {currentUser?.avatar || '👨‍💻'}
                 </div>
                 <input
                   type="text"
@@ -377,130 +551,144 @@ const PremiumDashboard = ({ onNavigate }) => {
 
             {/* Posts Feed */}
             <div className="space-y-3 sm:space-y-4 lg:space-y-6">
-              {posts.map((post) => (
-                <article
-                  key={post.id}
-                  onMouseEnter={() => setHoveredPost(post.id)}
-                  onMouseLeave={() => setHoveredPost(null)}
-                  className={`${
-                    isDarkMode
-                      ? 'bg-slate-900/50 border-slate-800/50 hover:bg-slate-900/70'
-                      : 'bg-white/50 border-slate-200/50 hover:bg-white/70'
-                  } border rounded-lg sm:rounded-2xl p-3 sm:p-6 backdrop-blur transition-all duration-300 hover:border-indigo-500/30 hover:shadow-lg group`}
-                >
-                  {/* Post Header */}
-                  <div className="flex items-start justify-between mb-3 sm:mb-4 gap-2">
-                    <div className="flex gap-2 sm:gap-3 flex-1 min-w-0">
-                      <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-sm sm:text-lg flex-shrink-0 shadow-lg">
-                        {post.avatar}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <h3 className={`font-semibold text-xs sm:text-sm truncate ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                          {post.author}
-                        </h3>
-                        <p className={`text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-600'}`}>
-                          {post.handle} · {post.timeAgo}
-                        </p>
-                        <span className={`inline-block px-2 py-0.5 rounded text-xs mt-1 transition-all duration-300 ${
-                          isDarkMode
-                            ? 'bg-slate-800/50 text-slate-300'
-                            : 'bg-slate-100/50 text-slate-700'
-                        }`}>
-                          {post.language}
-                        </span>
-                      </div>
-                    </div>
-                    <button className={`p-1.5 rounded-lg transition-all duration-300 opacity-0 group-hover:opacity-100 ${
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                    Loading posts...
+                  </div>
+                </div>
+              ) : posts.length === 0 ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                    No posts yet. Be the first to share!
+                  </div>
+                </div>
+              ) : (
+                posts.map((post) => (
+                  <article
+                    key={post.id}
+                    onMouseEnter={() => setHoveredPost(post.id)}
+                    onMouseLeave={() => setHoveredPost(null)}
+                    className={`${
                       isDarkMode
-                        ? 'hover:bg-slate-800/50 text-slate-400'
-                        : 'hover:bg-slate-100/50 text-slate-600'
-                    }`}>
-                      <MoreVertical className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  {/* Post Title & Description */}
-                  <div className="mb-3 sm:mb-4">
-                    <h2 className={`text-sm sm:text-lg font-bold mb-1 sm:mb-2 line-clamp-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                      {post.title}
-                    </h2>
-                    <p className={`text-xs sm:text-sm line-clamp-2 ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-                      {post.description}
-                    </p>
-                  </div>
-
-                  {/* Code Block */}
-                  <div className={`${
-                    isDarkMode
-                      ? 'bg-slate-950/50 border-slate-800/50'
-                      : 'bg-slate-50/50 border-slate-200/50'
-                  } border rounded-lg p-2 sm:p-4 mb-3 sm:mb-4 overflow-x-auto transition-all duration-300 group-hover:border-indigo-500/20`}>
-                    <span className={`text-xs font-bold uppercase tracking-wider ${
-                      isDarkMode ? 'text-slate-500' : 'text-slate-600'
-                    }`}>
-                      {post.codeLanguage}
-                    </span>
-                    <pre className={`text-xs sm:text-sm font-mono mt-2 max-h-32 overflow-auto ${
-                      isDarkMode ? 'text-slate-300' : 'text-slate-700'
-                    }`}>
-                      {post.code}
-                    </pre>
-                  </div>
-
-                  {/* Post Stats */}
-                  <div className={`flex items-center justify-between pt-3 sm:pt-4 border-t gap-2 sm:gap-4 text-xs sm:text-sm ${
-                    isDarkMode ? 'border-slate-800/50' : 'border-slate-200/50'
-                  }`}>
-                    <div className="flex gap-2 sm:gap-6">
-                      <button
-                        onClick={() => togglePostLike(post.id)}
-                        className={`flex items-center gap-1 transition-all duration-300 transform hover:scale-110 ${
-                          post.liked
-                            ? 'text-red-500'
-                            : isDarkMode
-                            ? 'text-slate-400 hover:text-red-500'
-                            : 'text-slate-600 hover:text-red-500'
-                        }`}
-                      >
-                        <Heart className={`w-4 h-4 transition-all ${post.liked ? 'fill-current scale-110' : ''}`} />
-                        <span className="hidden sm:inline font-medium">{post.likes}</span>
-                        <span className="sm:hidden text-xs">{post.likes}</span>
-                      </button>
-                      <button className={`flex items-center gap-1 transition-all duration-300 transform hover:scale-110 ${
+                        ? 'bg-slate-900/50 border-slate-800/50 hover:bg-slate-900/70'
+                        : 'bg-white/50 border-slate-200/50 hover:bg-white/70'
+                    } border rounded-lg sm:rounded-2xl p-3 sm:p-6 backdrop-blur transition-all duration-300 hover:border-indigo-500/30 hover:shadow-lg group`}
+                  >
+                    {/* Post Header */}
+                    <div className="flex items-start justify-between mb-3 sm:mb-4 gap-2">
+                      <div className="flex gap-2 sm:gap-3 flex-1 min-w-0">
+                        <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-sm sm:text-lg flex-shrink-0 shadow-lg">
+                          {post.avatar}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h3 className={`font-semibold text-xs sm:text-sm truncate ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                            {post.author}
+                          </h3>
+                          <p className={`text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-600'}`}>
+                            {post.handle} · {post.timeAgo}
+                          </p>
+                          <span className={`inline-block px-2 py-0.5 rounded text-xs mt-1 transition-all duration-300 ${
+                            isDarkMode
+                              ? 'bg-slate-800/50 text-slate-300'
+                              : 'bg-slate-100/50 text-slate-700'
+                          }`}>
+                            {post.language}
+                          </span>
+                        </div>
+                      </div>
+                      <button className={`p-1.5 rounded-lg transition-all duration-300 opacity-0 group-hover:opacity-100 ${
                         isDarkMode
-                          ? 'text-slate-400 hover:text-blue-500'
-                          : 'text-slate-600 hover:text-blue-500'
+                          ? 'hover:bg-slate-800/50 text-slate-400'
+                          : 'hover:bg-slate-100/50 text-slate-600'
                       }`}>
-                        <MessageCircle className="w-4 h-4" />
-                        <span className="hidden sm:inline font-medium">{post.comments}</span>
-                        <span className="sm:hidden text-xs">{post.comments}</span>
-                      </button>
-                      <button
-                        onClick={() => togglePostBookmark(post.id)}
-                        className={`flex items-center gap-1 transition-all duration-300 transform hover:scale-110 ${
-                          post.bookmarked
-                            ? 'text-indigo-500'
-                            : isDarkMode
-                            ? 'text-slate-400 hover:text-indigo-500'
-                            : 'text-slate-600 hover:text-indigo-500'
-                        }`}
-                      >
-                        <Bookmark className={`w-4 h-4 transition-all ${post.bookmarked ? 'fill-current scale-110' : ''}`} />
-                        <span className="hidden sm:inline font-medium">{post.bookmarks}</span>
-                        <span className="sm:hidden text-xs">{post.bookmarks}</span>
+                        <MoreVertical className="w-4 h-4" />
                       </button>
                     </div>
-                    <button className={`hidden sm:flex items-center gap-1 transition-all duration-300 ${
+
+                    {/* Post Title & Description */}
+                    <div className="mb-3 sm:mb-4">
+                      <h2 className={`text-sm sm:text-lg font-bold mb-1 sm:mb-2 line-clamp-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                        {post.title}
+                      </h2>
+                      <p className={`text-xs sm:text-sm line-clamp-2 ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                        {post.description}
+                      </p>
+                    </div>
+
+                    {/* Code Block */}
+                    <div className={`${
                       isDarkMode
-                        ? 'text-slate-400 hover:text-slate-300'
-                        : 'text-slate-600 hover:text-slate-900'
+                        ? 'bg-slate-950/50 border-slate-800/50'
+                        : 'bg-slate-50/50 border-slate-200/50'
+                    } border rounded-lg p-2 sm:p-4 mb-3 sm:mb-4 overflow-x-auto transition-all duration-300 group-hover:border-indigo-500/20`}>
+                      <span className={`text-xs font-bold uppercase tracking-wider ${
+                        isDarkMode ? 'text-slate-500' : 'text-slate-600'
+                      }`}>
+                        {post.codeLanguage}
+                      </span>
+                      <pre className={`text-xs sm:text-sm font-mono mt-2 max-h-32 overflow-auto ${
+                        isDarkMode ? 'text-slate-300' : 'text-slate-700'
+                      }`}>
+                        {post.code}
+                      </pre>
+                    </div>
+
+                    {/* Post Stats */}
+                    <div className={`flex items-center justify-between pt-3 sm:pt-4 border-t gap-2 sm:gap-4 text-xs sm:text-sm ${
+                      isDarkMode ? 'border-slate-800/50' : 'border-slate-200/50'
                     }`}>
-                      <Share className="w-4 h-4" />
-                      <span>Share</span>
-                    </button>
-                  </div>
-                </article>
-              ))}
+                      <div className="flex gap-2 sm:gap-6">
+                        <button
+                          onClick={() => togglePostLike(post.id)}
+                          className={`flex items-center gap-1 transition-all duration-300 transform hover:scale-110 ${
+                            post.liked
+                              ? 'text-red-500'
+                              : isDarkMode
+                              ? 'text-slate-400 hover:text-red-500'
+                              : 'text-slate-600 hover:text-red-500'
+                          }`}
+                        >
+                          <Heart className={`w-4 h-4 transition-all ${post.liked ? 'fill-current scale-110' : ''}`} />
+                          <span className="hidden sm:inline font-medium">{post.likes}</span>
+                          <span className="sm:hidden text-xs">{post.likes}</span>
+                        </button>
+                        <button className={`flex items-center gap-1 transition-all duration-300 transform hover:scale-110 ${
+                          isDarkMode
+                            ? 'text-slate-400 hover:text-blue-500'
+                            : 'text-slate-600 hover:text-blue-500'
+                        }`}>
+                          <MessageCircle className="w-4 h-4" />
+                          <span className="hidden sm:inline font-medium">{post.comments}</span>
+                          <span className="sm:hidden text-xs">{post.comments}</span>
+                        </button>
+                        <button
+                          onClick={() => togglePostBookmark(post.id)}
+                          className={`flex items-center gap-1 transition-all duration-300 transform hover:scale-110 ${
+                            post.bookmarked
+                              ? 'text-indigo-500'
+                              : isDarkMode
+                              ? 'text-slate-400 hover:text-indigo-500'
+                              : 'text-slate-600 hover:text-indigo-500'
+                          }`}
+                        >
+                          <Bookmark className={`w-4 h-4 transition-all ${post.bookmarked ? 'fill-current scale-110' : ''}`} />
+                          <span className="hidden sm:inline font-medium">{post.bookmarks}</span>
+                          <span className="sm:hidden text-xs">{post.bookmarks}</span>
+                        </button>
+                      </div>
+                      <button className={`hidden sm:flex items-center gap-1 transition-all duration-300 ${
+                        isDarkMode
+                          ? 'text-slate-400 hover:text-slate-300'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}>
+                        <Share className="w-4 h-4" />
+                        <span>Share</span>
+                      </button>
+                    </div>
+                  </article>
+                ))
+              )}
             </div>
           </div>
         </main>
@@ -518,15 +706,15 @@ const PremiumDashboard = ({ onNavigate }) => {
               : 'bg-slate-100/50 border-slate-200/50'
           } border rounded-xl p-4 text-center backdrop-blur transition-all duration-300 hover:border-indigo-500/30`}>
             <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-xl font-bold mx-auto mb-3 shadow-lg">
-              {currentUser.avatar}
+              {currentUser?.avatar || '👨‍💼'}
             </div>
             <h2 className={`text-lg font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-              {currentUser.name}
+              {currentUser?.name || 'Loading...'}
             </h2>
             <p className={`text-xs mb-3 ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-              {currentUser.handle}
+              {currentUser?.handle || ''}
             </p>
-            {currentUser.isPro && (
+            {currentUser?.isPro && (
               <div className="inline-block px-2 py-0.5 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 text-indigo-400 text-xs font-semibold rounded-full mb-3 border border-indigo-500/30">
                 ✨ Pro Member
               </div>
@@ -534,15 +722,15 @@ const PremiumDashboard = ({ onNavigate }) => {
             
             <div className={`grid grid-cols-3 gap-2 mb-3 py-3 border-y border-slate-700/30 text-xs`}>
               <div>
-                <p className="text-lg font-bold text-indigo-500">{currentUser.posts}</p>
+                <p className="text-lg font-bold text-indigo-500">{currentUser?.posts || 0}</p>
                 <p className={`${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>Posts</p>
               </div>
               <div>
-                <p className="text-lg font-bold text-indigo-500">{currentUser.followers}</p>
+                <p className="text-lg font-bold text-indigo-500">{currentUser?.followers || 0}</p>
                 <p className={`${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>Followers</p>
               </div>
               <div>
-                <p className="text-lg font-bold text-indigo-500">{currentUser.following}</p>
+                <p className="text-lg font-bold text-indigo-500">{currentUser?.following || 0}</p>
                 <p className={`${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>Following</p>
               </div>
             </div>
@@ -599,16 +787,16 @@ const PremiumDashboard = ({ onNavigate }) => {
               Trending
             </h3>
             <div className="space-y-2">
-              {trendingTags.slice(0, 5).map((item, index) => (
+              {trendingTags.slice(0, 5).map((item) => (
                 <button
-                  key={index}
+                  key={item.id}
                   className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-all duration-300 transform hover:translate-x-1 hover:scale-105 ${
                     isDarkMode
                       ? 'bg-slate-800/30 text-slate-300 hover:bg-slate-700/50'
                       : 'bg-slate-100/30 text-slate-700 hover:bg-slate-200/50'
                   }`}
                 >
-                  <span className="text-indigo-500">#{item.tag}</span>
+                  <span className="text-indigo-500">#{item.name}</span>
                   <span className={`float-right text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
                     {item.count}
                   </span>
