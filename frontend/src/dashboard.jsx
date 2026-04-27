@@ -23,6 +23,7 @@ const PremiumDashboard = ({ onNavigate }) => {
     { icon: Code, label: 'Snippets', id: 'snippets' },
   ];
 
+  // Toggle like on a post
   const togglePostLike = async (postId) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -31,9 +32,10 @@ const PremiumDashboard = ({ onNavigate }) => {
         return;
       }
 
-      const currentLike = posts.find(p => p.id === postId)?.liked;
+      const post = posts.find(p => p.id === postId);
+      if (!post) return;
 
-      if (currentLike) {
+      if (post.liked) {
         // Remove like
         await supabase
           .from('post_likes')
@@ -51,10 +53,14 @@ const PremiumDashboard = ({ onNavigate }) => {
       }
 
       // Update local state
-      setPosts(posts.map(post =>
-        post.id === postId
-          ? { ...post, liked: !post.liked, likes: post.liked ? post.likes - 1 : post.likes + 1 }
-          : post
+      setPosts(posts.map(p =>
+        p.id === postId
+          ? { 
+              ...p, 
+              liked: !p.liked, 
+              likes: p.liked ? p.likes - 1 : p.likes + 1 
+            }
+          : p
       ));
     } catch (error) {
       console.error('Error toggling like:', error.message);
@@ -62,6 +68,7 @@ const PremiumDashboard = ({ onNavigate }) => {
     }
   };
 
+  // Toggle bookmark on a post
   const togglePostBookmark = async (postId) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -70,9 +77,10 @@ const PremiumDashboard = ({ onNavigate }) => {
         return;
       }
 
-      const currentBookmark = posts.find(p => p.id === postId)?.bookmarked;
+      const post = posts.find(p => p.id === postId);
+      if (!post) return;
 
-      if (currentBookmark) {
+      if (post.bookmarked) {
         // Remove bookmark
         await supabase
           .from('post_bookmarks')
@@ -90,10 +98,14 @@ const PremiumDashboard = ({ onNavigate }) => {
       }
 
       // Update local state
-      setPosts(posts.map(post =>
-        post.id === postId
-          ? { ...post, bookmarked: !post.bookmarked, bookmarks: post.bookmarked ? post.bookmarks - 1 : post.bookmarks + 1 }
-          : post
+      setPosts(posts.map(p =>
+        p.id === postId
+          ? { 
+              ...p, 
+              bookmarked: !p.bookmarked, 
+              bookmarks: p.bookmarked ? p.bookmarks - 1 : p.bookmarks + 1 
+            }
+          : p
       ));
     } catch (error) {
       console.error('Error toggling bookmark:', error.message);
@@ -101,6 +113,7 @@ const PremiumDashboard = ({ onNavigate }) => {
     }
   };
 
+  // Handle logout
   const handleLogout = async () => {
     try {
       const { error } = await supabase.auth.signOut();
@@ -122,7 +135,7 @@ const PremiumDashboard = ({ onNavigate }) => {
         if (authUser) {
           const { data: userData, error } = await supabase
             .from('users')
-            .select('*')
+            .select('id, name, handle, avatar, is_pro, posts_count, followers_count, following_count')
             .eq('id', authUser.id)
             .single();
 
@@ -154,7 +167,7 @@ const PremiumDashboard = ({ onNavigate }) => {
         setLoading(true);
         const { data: { user: authUser } } = await supabase.auth.getUser();
 
-        // Fetch posts with user details
+        // Fetch posts with joined user data - CORRECTED TO MATCH SCHEMA
         const { data: postsData, error: postsError } = await supabase
           .from('posts')
           .select(`
@@ -178,29 +191,27 @@ const PremiumDashboard = ({ onNavigate }) => {
 
         // For each post, check if current user liked or bookmarked it
         let enrichedPosts = [];
-        if (postsData) {
+        if (postsData && postsData.length > 0) {
           for (const post of postsData) {
             let liked = false;
             let bookmarked = false;
 
             if (authUser) {
               // Check if user liked this post
-              const { data: likeData } = await supabase
+              const { data: likeData, error: likeError } = await supabase
                 .from('post_likes')
-                .select('id')
+                .select('id', { count: 'exact', head: true })
                 .eq('post_id', post.id)
-                .eq('user_id', authUser.id)
-                .single();
-              liked = !!likeData;
+                .eq('user_id', authUser.id);
+              liked = likeData && likeData.length > 0;
 
               // Check if user bookmarked this post
-              const { data: bookmarkData } = await supabase
+              const { data: bookmarkData, error: bookmarkError } = await supabase
                 .from('post_bookmarks')
-                .select('id')
+                .select('id', { count: 'exact', head: true })
                 .eq('post_id', post.id)
-                .eq('user_id', authUser.id)
-                .single();
-              bookmarked = !!bookmarkData;
+                .eq('user_id', authUser.id);
+              bookmarked = bookmarkData && bookmarkData.length > 0;
             }
 
             // Calculate time ago
@@ -217,9 +228,9 @@ const PremiumDashboard = ({ onNavigate }) => {
 
             enrichedPosts.push({
               id: post.id,
-              author: post.users.name,
-              avatar: post.users.avatar,
-              handle: '@' + post.users.handle,
+              author: post.users?.name || 'Unknown',
+              avatar: post.users?.avatar || '👨‍💻',
+              handle: '@' + (post.users?.handle || 'user'),
               timeAgo,
               language: post.language,
               title: post.title,
@@ -252,7 +263,7 @@ const PremiumDashboard = ({ onNavigate }) => {
       try {
         const { data, error } = await supabase
           .from('tags')
-          .select('*')
+          .select('id, name, count')
           .order('count', { ascending: false })
           .limit(6);
 
@@ -267,22 +278,23 @@ const PremiumDashboard = ({ onNavigate }) => {
     fetchTrendingTags();
   }, []);
 
-  // Fetch top contributors (users with most likes on their posts)
+  // Fetch top contributors (users with most posts)
   useEffect(() => {
     const fetchTopContributors = async () => {
       try {
         const { data, error } = await supabase
           .from('users')
-          .select('id, name, avatar, posts_count')
+          .select('id, name, avatar, posts_count, followers_count')
           .order('posts_count', { ascending: false })
           .limit(5);
 
         if (error) throw error;
 
+        // Calculate points based on posts_count and followers
         const contributorsWithPoints = (data || []).map(user => ({
           name: user.name,
           avatar: user.avatar,
-          points: user.posts_count * 50 + Math.floor(Math.random() * 200), // Simple points calculation
+          points: user.posts_count * 50 + user.followers_count * 10,
         }));
 
         setTopContributors(contributorsWithPoints);
@@ -751,7 +763,7 @@ const PremiumDashboard = ({ onNavigate }) => {
               Top Contributors
             </h3>
             <div className="space-y-2">
-              {topContributors.slice(0, 3).map((contributor, index) => (
+              {topContributors.map((contributor, index) => (
                 <div
                   key={index}
                   className={`flex items-center gap-2 p-2 rounded-lg transition-all duration-300 ${
@@ -787,7 +799,7 @@ const PremiumDashboard = ({ onNavigate }) => {
               Trending
             </h3>
             <div className="space-y-2">
-              {trendingTags.slice(0, 5).map((item) => (
+              {trendingTags.map((item) => (
                 <button
                   key={item.id}
                   className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-all duration-300 transform hover:translate-x-1 hover:scale-105 ${
