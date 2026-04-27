@@ -13,6 +13,14 @@ const PremiumDashboard = ({ onNavigate }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [topContributors, setTopContributors] = useState([]);
   const [trendingTags, setTrendingTags] = useState([]);
+  const [showPostModal, setShowPostModal] = useState(false);
+  const [newPost, setNewPost] = useState({
+    title: '',
+    description: '',
+    code: '',
+    language: 'JavaScript',
+    codeLanguage: 'JS'
+  });
 
   const navItems = [
     { icon: Home, label: 'Home', id: 'home' },
@@ -127,30 +135,117 @@ const PremiumDashboard = ({ onNavigate }) => {
     }
   };
 
+  // Create new post
+  const handleCreatePost = async () => {
+    try {
+      if (!newPost.title.trim()) {
+        alert('Please enter a post title');
+        return;
+      }
+      if (!newPost.description.trim()) {
+        alert('Please enter a description');
+        return;
+      }
+      if (!newPost.code.trim()) {
+        alert('Please enter code');
+        return;
+      }
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        alert('Please login to create posts');
+        return;
+      }
+
+      // Check if user exists in users table
+      const { data: userData } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', user.id)
+        .limit(1);
+
+      if (!userData || userData.length === 0) {
+        alert('Please complete your profile first');
+        return;
+      }
+
+      const { data: createdPost, error } = await supabase
+        .from('posts')
+        .insert([{
+          user_id: user.id,
+          title: newPost.title.trim(),
+          description: newPost.description.trim(),
+          code: newPost.code.trim(),
+          language: newPost.language,
+          code_language: newPost.codeLanguage,
+          likes_count: 0,
+          comments_count: 0,
+          bookmarks_count: 0,
+        }])
+        .select()
+        .single();
+
+      if (error) {
+        alert('Error creating post: ' + error.message);
+      } else {
+        alert('Post created successfully!');
+        // Reset form
+        setNewPost({
+          title: '',
+          description: '',
+          code: '',
+          language: 'JavaScript',
+          codeLanguage: 'JS'
+        });
+        setShowPostModal(false);
+        // Refresh posts
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error('Error creating post:', error);
+      alert('Error creating post: ' + error.message);
+    }
+  };
+
   // Fetch current user data
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
         const { data: { user: authUser } } = await supabase.auth.getUser();
         if (authUser) {
-          const { data: userData, error } = await supabase
+          // Fetch user if exists
+          const { data: userData } = await supabase
             .from('users')
             .select('id, name, handle, avatar, is_pro, posts_count, followers_count, following_count')
             .eq('id', authUser.id)
-            .single();
+            .limit(1);
 
-          if (error) throw error;
-
-          setCurrentUser({
-            id: userData.id,
-            name: userData.name,
-            handle: userData.handle,
-            avatar: userData.avatar,
-            isPro: userData.is_pro,
-            posts: userData.posts_count,
-            followers: userData.followers_count,
-            following: userData.following_count,
-          });
+          if (userData && userData.length > 0) {
+            // User exists - use their data
+            setCurrentUser({
+              id: userData[0].id,
+              name: userData[0].name,
+              handle: userData[0].handle,
+              avatar: userData[0].avatar,
+              isPro: userData[0].is_pro,
+              posts: userData[0].posts_count,
+              followers: userData[0].followers_count,
+              following: userData[0].following_count,
+            });
+          } else {
+            // User not in database - show default profile (won't save)
+            const emailPrefix = authUser.email?.split('@')[0] || 'user';
+            setCurrentUser({
+              id: authUser.id,
+              name: authUser.user_metadata?.full_name || emailPrefix,
+              handle: emailPrefix,
+              avatar: '👨‍💻',
+              isPro: false,
+              posts: 0,
+              followers: 0,
+              following: 0,
+            });
+          }
         }
       } catch (error) {
         console.error('Error fetching user:', error.message);
@@ -167,48 +262,52 @@ const PremiumDashboard = ({ onNavigate }) => {
         setLoading(true);
         const { data: { user: authUser } } = await supabase.auth.getUser();
 
-        // Fetch posts with joined user data - CORRECTED TO MATCH SCHEMA
+        // Fetch posts with joined user data
         const { data: postsData, error: postsError } = await supabase
           .from('posts')
-          .select(`
-            id,
-            title,
-            description,
-            code,
-            language,
-            code_language,
-            likes_count,
-            comments_count,
-            bookmarks_count,
-            created_at,
-            user_id,
-            users(id, name, handle, avatar)
-          `)
+          .select('*')
           .order('created_at', { ascending: false })
           .limit(10);
 
         if (postsError) throw postsError;
 
-        // For each post, check if current user liked or bookmarked it
-        let enrichedPosts = [];
+        // Fetch user data for each post separately
+        let enrichedPostsWithUsers = [];
         if (postsData && postsData.length > 0) {
           for (const post of postsData) {
+            const { data: userData } = await supabase
+              .from('users')
+              .select('id, name, handle, avatar')
+              .eq('id', post.user_id)
+              .single();
+            
+            enrichedPostsWithUsers.push({
+              ...post,
+              users: userData
+            });
+          }
+        }
+
+        // For each post, check if current user liked or bookmarked it
+        let enrichedPosts = [];
+        if (enrichedPostsWithUsers && enrichedPostsWithUsers.length > 0) {
+          for (const post of enrichedPostsWithUsers) {
             let liked = false;
             let bookmarked = false;
 
             if (authUser) {
               // Check if user liked this post
-              const { data: likeData, error: likeError } = await supabase
+              const { data: likeData } = await supabase
                 .from('post_likes')
-                .select('id', { count: 'exact', head: true })
+                .select('id')
                 .eq('post_id', post.id)
                 .eq('user_id', authUser.id);
               liked = likeData && likeData.length > 0;
 
               // Check if user bookmarked this post
-              const { data: bookmarkData, error: bookmarkError } = await supabase
+              const { data: bookmarkData } = await supabase
                 .from('post_bookmarks')
-                .select('id', { count: 'exact', head: true })
+                .select('id')
                 .eq('post_id', post.id)
                 .eq('user_id', authUser.id);
               bookmarked = bookmarkData && bookmarkData.length > 0;
@@ -464,7 +563,9 @@ const PremiumDashboard = ({ onNavigate }) => {
             <div className={`h-px ${isDarkMode ? 'bg-slate-800/30' : 'bg-slate-200/50'}`} />
 
             {/* New Post Button */}
-            <button className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 sm:py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg ${
+            <button 
+              onClick={() => setShowPostModal(true)}
+              className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 sm:py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg ${
               isDarkMode
                 ? 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:shadow-indigo-600/30 text-white'
                 : 'bg-gradient-to-r from-indigo-500 to-purple-500 hover:shadow-purple-500/30 text-white'
@@ -836,6 +937,148 @@ const PremiumDashboard = ({ onNavigate }) => {
           background: rgba(100, 116, 139, 0.6);
         }
       `}</style>
+
+      {/* Create Post Modal */}
+      {showPostModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className={`${
+            isDarkMode 
+              ? 'bg-slate-900 border-slate-800' 
+              : 'bg-white border-slate-200'
+          } border rounded-2xl shadow-2xl max-w-2xl w-full p-6 space-y-4`}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Create New Post</h2>
+              <button 
+                onClick={() => setShowPostModal(false)}
+                className={`p-2 rounded-lg ${isDarkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-100'}`}
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {/* Title */}
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                  Title
+                </label>
+                <input
+                  type="text"
+                  value={newPost.title}
+                  onChange={(e) => setNewPost({...newPost, title: e.target.value})}
+                  placeholder="What's your question or topic?"
+                  className={`w-full px-4 py-2 rounded-lg border ${
+                    isDarkMode
+                      ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500'
+                      : 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400'
+                  } outline-none focus:border-indigo-500`}
+                />
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                  Description
+                </label>
+                <textarea
+                  value={newPost.description}
+                  onChange={(e) => setNewPost({...newPost, description: e.target.value})}
+                  placeholder="Describe your problem or idea..."
+                  rows="3"
+                  className={`w-full px-4 py-2 rounded-lg border ${
+                    isDarkMode
+                      ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500'
+                      : 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400'
+                  } outline-none focus:border-indigo-500 resize-none`}
+                />
+              </div>
+
+              {/* Language Selection */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                    Language
+                  </label>
+                  <select
+                    value={newPost.language}
+                    onChange={(e) => setNewPost({...newPost, language: e.target.value})}
+                    className={`w-full px-4 py-2 rounded-lg border ${
+                      isDarkMode
+                        ? 'bg-slate-800 border-slate-700 text-white'
+                        : 'bg-slate-50 border-slate-200 text-slate-900'
+                    } outline-none focus:border-indigo-500`}
+                  >
+                    <option>JavaScript</option>
+                    <option>Python</option>
+                    <option>React</option>
+                    <option>TypeScript</option>
+                    <option>CSS</option>
+                    <option>HTML</option>
+                  </select>
+                </div>
+                <div>
+                  <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                    Code Language
+                  </label>
+                  <select
+                    value={newPost.codeLanguage}
+                    onChange={(e) => setNewPost({...newPost, codeLanguage: e.target.value})}
+                    className={`w-full px-4 py-2 rounded-lg border ${
+                      isDarkMode
+                        ? 'bg-slate-800 border-slate-700 text-white'
+                        : 'bg-slate-50 border-slate-200 text-slate-900'
+                    } outline-none focus:border-indigo-500`}
+                  >
+                    <option value="JS">JS</option>
+                    <option value="PY">PY</option>
+                    <option value="TS">TS</option>
+                    <option value="JSX">JSX</option>
+                    <option value="CSS">CSS</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Code */}
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                  Code
+                </label>
+                <textarea
+                  value={newPost.code}
+                  onChange={(e) => setNewPost({...newPost, code: e.target.value})}
+                  placeholder="Paste your code here..."
+                  rows="5"
+                  className={`w-full px-4 py-2 rounded-lg border font-mono text-sm ${
+                    isDarkMode
+                      ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500'
+                      : 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400'
+                  } outline-none focus:border-indigo-500 resize-none`}
+                />
+              </div>
+
+              {/* Buttons */}
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => setShowPostModal(false)}
+                  className={`flex-1 py-2 rounded-lg font-semibold transition-all ${
+                    isDarkMode
+                      ? 'bg-slate-800 hover:bg-slate-700 text-slate-300'
+                      : 'bg-slate-200 hover:bg-slate-300 text-slate-900'
+                  }`}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreatePost}
+                  className="flex-1 py-2 rounded-lg font-semibold bg-gradient-to-r from-indigo-600 to-purple-600 hover:shadow-lg hover:shadow-indigo-600/30 text-white transition-all"
+                >
+                  Post
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

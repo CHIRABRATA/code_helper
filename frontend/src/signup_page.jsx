@@ -25,6 +25,22 @@ const SignupPage = ({ onNavigate }) => {
     e.preventDefault();
     
     // Validation checks
+    if (!formData.fullName.trim()) {
+      alert("Please enter your full name");
+      return;
+    }
+    if (!formData.email.trim()) {
+      alert("Please enter your email");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      alert("Please enter a valid email address");
+      return;
+    }
+    if (formData.password.length < 6) {
+      alert("Password must be at least 6 characters long");
+      return;
+    }
     if (formData.password !== formData.confirmPassword) {
       alert("Passwords do not match!");
       return;
@@ -36,24 +52,37 @@ const SignupPage = ({ onNavigate }) => {
 
     try {
       const { data, error } = await supabase.auth.signUp({
-        email: formData.email,
+        email: formData.email.trim(),
         password: formData.password,
         options: {
           data: {
-            full_name: formData.fullName,
+            full_name: formData.fullName.trim(),
           },
         },
       });
 
       if (error) {
-        alert("Signup error: " + error.message);
+        console.error("Signup error details:", error);
+        // Handle specific error messages
+        if (error.message.includes("already registered")) {
+          alert("This email is already registered. Please try logging in.");
+        } else if (error.message.includes("invalid")) {
+          alert("Invalid email format. Please try again.");
+        } else {
+          alert("Signup error: " + error.message);
+        }
       } else {
-        alert("Signup successful! Check your email to confirm your account.");
-        console.log("User data:", data);
-        // Redirect to dashboard after successful signup
-        onNavigate("dashboard");
+        // Don't force profile creation - user can set it up in profile completion
+        alert("Signup successful! Please check your email to verify your account.");
+        console.log("User created:", data.user.id);
+        
+        // Redirect to profile completion
+        setTimeout(() => {
+          onNavigate("profile-completion");
+        }, 1500);
       }
     } catch (err) {
+      console.error("Unexpected error:", err);
       alert("An unexpected error occurred: " + err.message);
     }
   };

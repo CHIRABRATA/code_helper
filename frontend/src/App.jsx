@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import LandingPage from './landing_page';
 import LoginPage from './login_page';
 import SignupPage from './signup_page';
+import ProfileCompletion from './profile_completion';
 import Dashboard from './dashboard';
 import { supabase } from './supabaseClient';
 
@@ -16,8 +17,20 @@ function App() {
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session) {
-          // User is already logged in, go to dashboard
-          setCurrentPage('dashboard');
+          // User is logged in - check if they have completed their profile
+          const { data: userProfile } = await supabase
+            .from('users')
+            .select('id')
+            .eq('id', session.user.id)
+            .limit(1);
+
+          if (userProfile && userProfile.length > 0) {
+            // Profile exists, go to dashboard
+            setCurrentPage('dashboard');
+          } else {
+            // No profile, go to profile completion
+            setCurrentPage('profile-completion');
+          }
         } else {
           // No session, stay on landing page
           setCurrentPage('landing');
@@ -36,8 +49,8 @@ function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (session && event !== 'SIGNED_OUT') {
-          // User is signed in
-          setCurrentPage('dashboard');
+          // User is signed in - check if they have a profile
+          checkAuth();
         } else if (!session && event === 'SIGNED_OUT') {
           // User signed out
           setCurrentPage('landing');
@@ -72,9 +85,11 @@ function App() {
       {currentPage === 'landing' && <LandingPage onNavigate={handleNavigate} />}
       {currentPage === 'login' && <LoginPage onNavigate={handleNavigate} />}
       {currentPage === 'signup' && <SignupPage onNavigate={handleNavigate} />}
+      {currentPage === 'profile-completion' && <ProfileCompletion onNavigate={handleNavigate} />}
       {currentPage === 'dashboard' && <Dashboard onNavigate={handleNavigate} />}
     </>
   );
 }
 
 export default App;
+
